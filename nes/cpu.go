@@ -44,8 +44,8 @@ func (cpu *CPU) Reset() {
 	}
 
 	// JMP (FFFC) - reset vector
-	vec := (uint16(cpu.mem.Read(0xFFFD)) << 8) | uint16(cpu.mem.Read(0xFFFC))
-	cpu.PC = vec
+	a := (uint16(cpu.mem.Read(0xFFFD)) << 8) | uint16(cpu.mem.Read(0xFFFC))
+	cpu.PC = (uint16(cpu.mem.Read(a+1)) << 8) | uint16(cpu.mem.Read(a))
 	/*
 		cpu.S -= 3
 		cpu.mem.Write(0x4015, 0x00)

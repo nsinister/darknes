@@ -8,7 +8,7 @@ import (
 // to address the operand it must do the addition - cpu.rom[cpu.PC+1]
 // For overflow protection integer type casts are used
 
-// Represents a single opcode
+// Opcode represents a single opcode
 type Opcode struct {
 	// Function that handles the instruction
 	handler func(*CPU, byte)
@@ -35,10 +35,6 @@ const (
 	Acc                 // Accumulator
 	Imp                 // Implied
 	Rel                 // Relative
-
-	// Masks for overflow control
-	u8mask  = 0x00FF
-	u16mask = 0x0000FFFF
 )
 
 // Opcode map contains bindings between opcode functions and their
@@ -259,25 +255,27 @@ func peek(c *CPU, m byte) byte {
 	case Zp:
 		return c.mem.Read(uint16(c.mem.Read(c.PC + 1)))
 	case Zpx:
-		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.X) & u8mask)))
+		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.X))))
 	case Zpy:
-		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.Y) & u8mask)))
+		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.Y))))
 	case Abs:
 		return c.mem.Read(uint16((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))))
 	case Abx:
-		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2))<<8)|uint16(c.mem.Read(c.PC+1)))+uint16(c.X)) & u16mask)
+		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))) + uint16(c.X)))
 	case Aby:
-		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2))<<8)|uint16(c.mem.Read(c.PC+1)))+uint16(c.Y)) & u16mask)
+		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))) + uint16(c.Y)))
 	case Izx:
-		a := uint16(byte((c.mem.Read(c.PC+1) + c.X) & u8mask))
+		a := uint16(byte((c.mem.Read(c.PC+1) + c.X)))
 		addr := (uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a))
-		return c.mem.Read(uint16(addr) & u16mask)
+		return c.mem.Read(uint16(addr))
 	case Izy:
-		a := (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
-		return c.mem.Read(uint16((a + uint16(c.Y))) & u16mask)
+		a := uint16(c.mem.Read(c.PC + 1))
+		addr := (uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a))
+		return c.mem.Read(addr + uint16(c.Y))
+	// Indirect is used only by JMP, so the below branch will be left unused
 	case Ind:
 		a := (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
-		return c.mem.Read(a & u16mask)
+		return c.mem.Read((uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a)))
 	case Acc:
 		return c.A
 	case Rel:
@@ -300,7 +298,12 @@ func lda(c *CPU, m byte) {
 }
 
 func jmp(c *CPU, m byte) {
-	c.PC = (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
+	if m == Ind {
+		a := (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
+		c.PC = (uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a))
+	} else {
+		c.PC = (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
+	}
 }
 
 func sei(c *CPU, m byte) {
