@@ -1,9 +1,5 @@
 package nes
 
-import (
-	"fmt"
-)
-
 // PC is not incremented in the opcode handler functions,
 // to address the operand it must do the addition - cpu.rom[cpu.PC+1]
 // For overflow protection integer type casts are used
@@ -235,60 +231,11 @@ var opcodeMap = map[byte]*Opcode{
 	0x98: &Opcode{tya, Imp, 1, 2},
 }
 
-// Sets PC (Program Counter) to the beginning of the next instruction.
-// Depending on the instruction, it may jump to a specific address
-// or increment PC by instruction length.
-func nextOp(cpu *CPU, opcode byte) {
-	// JMP or equivalent instructions skip the PC increment
-	if opcode == 0x4C || opcode == 0x6C {
-		return
-	}
-	cpu.PC += opcodeMap[opcode].len
-}
-
-// Takes one byte from RAM using specified addressing mode
-func peek(c *CPU, m byte) byte {
-	// TODO: Review this, write tests
-	switch m {
-	case Imm:
-		return c.mem.Read(c.PC + 1)
-	case Zp:
-		return c.mem.Read(uint16(c.mem.Read(c.PC + 1)))
-	case Zpx:
-		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.X))))
-	case Zpy:
-		return c.mem.Read(uint16(byte((c.mem.Read(c.PC+1) + c.Y))))
-	case Abs:
-		return c.mem.Read(uint16((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))))
-	case Abx:
-		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))) + uint16(c.X)))
-	case Aby:
-		return c.mem.Read(uint16(((uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))) + uint16(c.Y)))
-	case Izx:
-		a := uint16(byte((c.mem.Read(c.PC+1) + c.X)))
-		addr := (uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a))
-		return c.mem.Read(uint16(addr))
-	case Izy:
-		a := uint16(c.mem.Read(c.PC + 1))
-		addr := (uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a))
-		return c.mem.Read(addr + uint16(c.Y))
-	// Indirect is used only by JMP, so the below branch will be left unused
-	case Ind:
-		a := (uint16(c.mem.Read(c.PC+2)) << 8) | uint16(c.mem.Read(c.PC+1))
-		return c.mem.Read((uint16(c.mem.Read(a+1)) << 8) | uint16(c.mem.Read(a)))
-	case Acc:
-		return c.A
-	case Rel:
-		return c.mem.Read(c.PC + 1)
-	}
-	panic(fmt.Sprintf("Addressing mode %v not recognized\n", m))
-}
-
 // LDA (Load Accumulator)
 // Loads a byte into the accumulator setting the zero and negative
 // flags as appropriate
 func lda(c *CPU, m byte) {
-	c.A = peek(c, m)
+	c.A = c.mem.Read(peek(c, m))
 
 	if c.A>>7 == 1 {
 		c.P |= 0x80
@@ -319,15 +266,44 @@ func sta(c *CPU, m byte) {
 }
 
 func adc(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	a := c.A
+	c.A = a + v + (c.P & 0x01)
+	c.testOverflowOnAdd(a, v, c.A)
+	c.testNegative(c.A)
+	c.testZero(c.A)
+	c.testCarryOnAdd(c.A)
 }
 
 func and(c *CPU, m byte) {
-
+	c.A &= c.mem.Read(peek(c, m))
+	c.testNegative(c.A)
+	c.testZero(c.A)
 }
 
 func asl(c *CPU, m byte) {
-
+	if m == Acc {
+		if c.A&0x80 > 0 {
+			c.setFlag(FlagCarry)
+		} else {
+			c.clearFlag(FlagCarry)
+		}
+		c.A = c.A << 1
+		c.testZero(c.A)
+		c.testNegative(c.A)
+	} else {
+		addr := peek(c, m)
+		v := c.mem.Read(addr)
+		if v&0x80 > 0 {
+			c.setFlag(FlagCarry)
+		} else {
+			c.clearFlag(FlagCarry)
+		}
+		v = v << 1
+		c.mem.Write(addr, v)
+		c.testZero(v)
+		c.testNegative(v)
+	}
 }
 
 func bcc(c *CPU, m byte) {
