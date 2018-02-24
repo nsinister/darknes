@@ -306,37 +306,59 @@ func asl(c *CPU, m byte) {
 	}
 }
 
+func branch(c *CPU, m byte) {
+	t := c.PC + uint16(peek(c, m))
+	c.setBranchCycles(t)
+	c.PC = t
+}
+
+// Branch if Carry Clear
 func bcc(c *CPU, m byte) {
-	// FIXME: implement checks
-	c.PC += uint16(peek(c, m))
+	if c.P&FlagCarry != FlagCarry {
+		branch(c, m)
+	}
 }
 
 func bcs(c *CPU, m byte) {
-
+	if c.P&FlagCarry == FlagCarry {
+		branch(c, m)
+	}
 }
 
 func beq(c *CPU, m byte) {
-
+	if c.P&FlagZero == FlagZero {
+		branch(c, m)
+	}
 }
 
 func bmi(c *CPU, m byte) {
-
+	if c.P&FlagNegative == FlagNegative {
+		branch(c, m)
+	}
 }
 
 func bne(c *CPU, m byte) {
-
+	if c.P&FlagZero != FlagZero {
+		branch(c, m)
+	}
 }
 
 func bpl(c *CPU, m byte) {
-
+	if c.P&FlagNegative != FlagNegative {
+		branch(c, m)
+	}
 }
 
 func bvc(c *CPU, m byte) {
-
+	if c.P&FlagOverflow != FlagOverflow {
+		branch(c, m)
+	}
 }
 
 func bvs(c *CPU, m byte) {
-
+	if c.P&FlagOverflow == FlagOverflow {
+		branch(c, m)
+	}
 }
 
 func bit(c *CPU, m byte) {
