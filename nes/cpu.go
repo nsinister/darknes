@@ -148,6 +148,7 @@ func (cpu *CPU) testCarryOnAdd(val byte) {
 // or increment PC by instruction length.
 func nextOp(cpu *CPU, opcode byte) {
 	// JMP or equivalent instructions skip the PC increment
+	// TODO: add branch instructions check
 	if opcode == 0x4C || opcode == 0x6C {
 		return
 	}
