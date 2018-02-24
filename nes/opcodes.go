@@ -307,7 +307,7 @@ func asl(c *CPU, m byte) {
 }
 
 func branch(c *CPU, m byte) {
-	a := peek(c, m)
+	a := c.mem.Read(peek(c, m))
 	t := c.PC + 1
 	if a < 0x80 {
 		t += uint16(a)
@@ -368,7 +368,25 @@ func bvs(c *CPU, m byte) {
 }
 
 func bit(c *CPU, m byte) {
+	v := c.mem.Read(peek(c, m))
 
+	if v&c.A == 0 {
+		c.setFlag(FlagZero)
+	} else {
+		c.clearFlag(FlagZero)
+	}
+
+	if v&0x80 > 0x00 {
+		c.setFlag(FlagNegative)
+	} else {
+		c.clearFlag(FlagNegative)
+	}
+
+	if v&0x40 > 0x00 {
+		c.setFlag(FlagOverflow)
+	} else {
+		c.clearFlag(FlagOverflow)
+	}
 }
 
 func brk(c *CPU, m byte) {
