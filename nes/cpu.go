@@ -143,13 +143,37 @@ func (cpu *CPU) testCarryOnAdd(val byte) {
 	cpu.clearFlag(FlagCarry)
 }
 
-// Sets PC (Program Counter) to the beginning of the next instruction.
-// Depending on the instruction, it may jump to a specific address
-// or increment PC by instruction length.
+// Sets PC (Program Counter) to the beginning of the next instruction
 func nextOp(cpu *CPU, opcode byte) {
-	// JMP or equivalent instructions skip the PC increment
-	// TODO: add branch instructions check
-	if opcode == 0x4C || opcode == 0x6C {
+	// Jump, branch and similar instructions skip the PC increment
+	switch opcode {
+	case 0x00:
+		fallthrough
+	case 0x40:
+		fallthrough
+	case 0x60:
+		fallthrough
+	case 0x20:
+		fallthrough
+	case 0x4C:
+		fallthrough
+	case 0x6C:
+		fallthrough
+	case 0x90:
+		fallthrough
+	case 0xB0:
+		fallthrough
+	case 0xF0:
+		fallthrough
+	case 0x30:
+		fallthrough
+	case 0xD0:
+		fallthrough
+	case 0x10:
+		fallthrough
+	case 0x50:
+		fallthrough
+	case 0x70:
 		return
 	}
 	cpu.PC += opcodeMap[opcode].len
