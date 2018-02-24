@@ -307,7 +307,7 @@ func asl(c *CPU, m byte) {
 }
 
 func branch(c *CPU, m byte) {
-	t := c.PC + uint16(peek(c, m))
+	t := c.PC + 1 + uint16(peek(c, m))
 	c.setBranchCycles(t)
 	c.PC = t
 }
