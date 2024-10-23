@@ -25,7 +25,7 @@ func main() {
 	cpu.Reset()
 	fmt.Printf("Init state: A=%x, X=%x, Y=%x, S=%x, P=%b, PC=%x\n",
 		cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC)
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 10; i++ {
 		cpu.Step()
 		fmt.Printf("A=%x, X=%x, Y=%x, S=%x, P=%b, PC=%x\n",
 			cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC)

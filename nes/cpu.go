@@ -8,12 +8,17 @@ import (
 )
 
 const (
-	FlagCarry    byte = 0x01
-	FlagZero     byte = 0x02
-	FlagOverflow byte = 0x40
-	FlagNegative byte = 0x80
+	FlagCarry            byte = 0x01
+	FlagZero             byte = 0x02
+	FlagInterruptDisable byte = 0x04
+	FlagDecimalMode      byte = 0x08
+	FlagBreakCommand     byte = 0x10
+	FlagOverflow         byte = 0x20
+	FlagNegative         byte = 0x40
 
 	prgStartAddr = 0x8000
+
+	stackAddr uint16 = 0x0100
 )
 
 // CPU represents 2A03 CPU based on MOS 6502
@@ -76,6 +81,20 @@ func (cpu *CPU) Step() {
 	}
 	// Go to the next instruction (if prev opcode was jmp, it doesn't do anything)
 	nextOp(cpu, op)
+}
+
+// Push value to stack
+func (cpu *CPU) push(val byte) {
+	addr := stackAddr + uint16(cpu.S)
+	cpu.mem.Write(addr, val)
+	cpu.S--
+}
+
+// Pop value from stack
+func (cpu *CPU) pop() byte {
+	addr := stackAddr + uint16(cpu.S)
+	cpu.S++
+	return cpu.mem.Read(addr)
 }
 
 // Sets flag in register P

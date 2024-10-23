@@ -390,6 +390,19 @@ func bit(c *CPU, m byte) {
 }
 
 func brk(c *CPU, m byte) {
+	c.PC += 2 // skip two instrubctions
+
+	c.push(byte(c.PC >> 8))
+	c.push(byte(c.PC & 0xFF))
+
+	c.setFlag(FlagBreakCommand)
+	c.push(c.P)
+
+	c.setFlag(FlagInterruptDisable)
+
+	pcLow := c.mem.Read(0xFFFE)
+	pcHigh := c.mem.Read(0xFFFF)
+	c.PC = uint16((pcHigh << 8) | pcLow)
 }
 
 func clc(c *CPU, m byte) {
