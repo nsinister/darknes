@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/skyphaser/darknes/nes"
+	"darknes/nes"
 )
 
 func main() {
