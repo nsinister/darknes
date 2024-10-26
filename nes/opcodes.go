@@ -238,9 +238,9 @@ func lda(c *CPU, m byte) {
 	c.A = c.mem.Read(peek(c, m))
 
 	if c.A>>7 == 1 {
-		c.P |= 0x80
+		c.P |= FlagNegative
 	} else if c.A == 0 {
-		c.P |= 0x2
+		c.P |= FlagZero
 	}
 }
 
@@ -254,15 +254,15 @@ func jmp(c *CPU, m byte) {
 }
 
 func sei(c *CPU, m byte) {
-	// TODO
+	c.setFlag(FlagInterruptDisable)
 }
 
 func cld(c *CPU, m byte) {
-	// TODO
+	c.clearFlag(FlagDecimalMode)
 }
 
 func sta(c *CPU, m byte) {
-	// TODO
+	c.mem.Write(peek(c, m), c.A)
 }
 
 func adc(c *CPU, m byte) {
@@ -390,7 +390,7 @@ func bit(c *CPU, m byte) {
 }
 
 func brk(c *CPU, m byte) {
-	c.PC += 2 // skip two instrubctions
+	c.PC += 2 // skip two instructions
 
 	c.push(byte(c.PC >> 8))
 	c.push(byte(c.PC & 0xFF))
@@ -400,18 +400,23 @@ func brk(c *CPU, m byte) {
 
 	c.setFlag(FlagInterruptDisable)
 
+	// fetch address vector
 	pcLow := c.mem.Read(0xFFFE)
 	pcHigh := c.mem.Read(0xFFFF)
+	// jump to the address
 	c.PC = uint16((pcHigh << 8) | pcLow)
 }
 
 func clc(c *CPU, m byte) {
+	c.clearFlag(FlagCarry)
 }
 
 func cli(c *CPU, m byte) {
+	c.clearFlag(FlagInterruptDisable)
 }
 
 func clv(c *CPU, m byte) {
+	c.clearFlag(FlagOverflow)
 }
 
 func cmp(c *CPU, m byte) {

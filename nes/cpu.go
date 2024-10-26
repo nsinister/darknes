@@ -98,14 +98,7 @@ func (cpu *CPU) setFlag(flag byte) {
 }
 
 func (cpu *CPU) clearFlag(flag byte) {
-	switch flag {
-	case FlagOverflow:
-		cpu.P &= 0xBF
-	case FlagNegative:
-		cpu.P &= 0x7F
-	case FlagZero:
-		cpu.P &= 0xFD
-	}
+	cpu.P &= ^flag
 }
 
 func (cpu *CPU) setBranchCycles(addr uint16) {
