@@ -35,14 +35,6 @@ func CreateScreen(cpuEmu common.CpuEmulator) *SdlFrontend {
 	return &frontend
 }
 
-func (frontend *SdlFrontend) clearRect(x int32, y int32) (err error) {
-	if err = frontend.surface.Blit(nil, frontend.surface, &sdl.Rect{X: x, Y: y, W: 0, H: 0}); err != nil {
-		return err
-	}
-	frontend.window.UpdateSurface()
-	return nil
-}
-
 func (frontend *SdlFrontend) renderText(textstr string, x int32, y int32) (err error) {
 	if frontend.text, err = frontend.font.RenderUTF8Blended(textstr, sdl.Color{R: 255, G: 255, B: 255, A: 255}); err != nil {
 		return err

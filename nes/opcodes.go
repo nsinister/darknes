@@ -428,55 +428,142 @@ func clv(c *CPU, m byte) {
 }
 
 func cmp(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	if c.A >= v {
+		c.setFlag(FlagCarry)
+	}
+	if c.A == v {
+		c.setFlag(FlagZero)
+	}
+	c.testNegative(c.A - v)
 }
 
 func cpx(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	if c.X >= v {
+		c.setFlag(FlagCarry)
+	}
+	if c.X == v {
+		c.setFlag(FlagZero)
+	}
+	c.testNegative(c.X - v)
 }
 
 func cpy(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	if c.Y >= v {
+		c.setFlag(FlagCarry)
+	}
+	if c.Y == v {
+		c.setFlag(FlagZero)
+	}
+	c.testNegative(c.Y - v)
 }
 
 func inc(c *CPU, m byte) {
+	addr := peek(c, m)
+	// read value and increment
+	v := c.mem.Read(addr) + 1
+	// write it back to the same address
+	c.mem.Write(addr, v)
 
+	c.testNegative(v)
+	c.testZero(v)
 }
 
 func inx(c *CPU, m byte) {
-
+	c.X += 1
+	c.testNegative(c.X)
+	c.testZero(c.X)
 }
 
 func iny(c *CPU, m byte) {
-
+	c.Y += 1
+	c.testNegative(c.Y)
+	c.testZero(c.Y)
 }
 
 func dec(c *CPU, m byte) {
+	addr := peek(c, m)
+	// read value and decrement
+	v := c.mem.Read(addr) - 1
+	// write it back to the same address
+	c.mem.Write(addr, v)
 
+	c.testNegative(v)
+	c.testZero(v)
 }
 
 func dex(c *CPU, m byte) {
-
+	c.X -= 1
+	c.testNegative(c.X)
+	c.testZero(c.X)
 }
 
 func dey(c *CPU, m byte) {
-
+	c.Y -= 1
+	c.testNegative(c.Y)
+	c.testZero(c.Y)
 }
 
 func eor(c *CPU, m byte) {
-
+	c.A ^= c.mem.Read(peek(c, m))
+	c.testNegative(c.A)
+	c.testZero(c.A)
 }
 
 func jsr(c *CPU, m byte) {
+	addr := c.PC + 2 - 1
+	c.push(byte(addr >> 8))
+	c.push(byte(addr & 0xFF))
+
+	pcl := c.mem.Read(c.PC)
+	pch := c.mem.Read(c.PC + 1)
+	c.PC = uint16(pch<<8) | uint16(pcl)
 }
 
 func ldx(c *CPU, m byte) {
+	c.X = c.mem.Read(peek(c, m))
+	c.testNegative(c.X)
+	c.testZero(c.X)
 }
 
 func ldy(c *CPU, m byte) {
+	c.Y = c.mem.Read(peek(c, m))
+	c.testNegative(c.Y)
+	c.testZero(c.Y)
 }
 
 func lsr(c *CPU, m byte) {
+	var v byte
+	// if addressing mode is Accumulator, use register A
+	if m == Acc {
+		v = c.A
+		c.A = v >> 1
+
+		if v&FlagCarry == FlagCarry {
+			c.setFlag(FlagCarry)
+		} else {
+			c.clearFlag(FlagCarry)
+		}
+		c.testNegative(c.A)
+		c.testZero(c.A)
+	} else {
+		// otherwise access memory
+		addr := peek(c, m)
+		v = c.mem.Read(addr)
+
+		if v&FlagCarry == FlagCarry {
+			c.setFlag(FlagCarry)
+		} else {
+			c.clearFlag(FlagCarry)
+		}
+
+		v = v >> 1
+		c.mem.Write(addr, v)
+		c.testNegative(v)
+		c.testZero(v)
+	}
 }
 
 func rol(c *CPU, m byte) {
@@ -486,6 +573,7 @@ func ror(c *CPU, m byte) {
 }
 
 func nop(c *CPU, m byte) {
+	// not much to do anything here, move along
 }
 
 func ora(c *CPU, m byte) {
@@ -521,41 +609,51 @@ func sbc(c *CPU, m byte) {
 }
 
 func sec(c *CPU, m byte) {
-
+	c.setFlag(FlagCarry)
 }
 
 func sed(c *CPU, m byte) {
-
+	c.setFlag(FlagDecimalMode)
 }
 
 func stx(c *CPU, m byte) {
-
+	c.mem.Write(peek(c, m), c.X)
 }
 
 func sty(c *CPU, m byte) {
-
+	c.mem.Write(peek(c, m), c.Y)
 }
 
 func tax(c *CPU, m byte) {
-
+	c.X = c.A
+	c.testZero(c.X)
+	c.testNegative(c.X)
 }
 
 func tay(c *CPU, m byte) {
-
+	c.Y = c.A
+	c.testZero(c.Y)
+	c.testNegative(c.Y)
 }
 
 func tsx(c *CPU, m byte) {
-
+	c.X = c.S
+	c.testZero(c.X)
+	c.testNegative(c.X)
 }
 
 func txa(c *CPU, m byte) {
-
+	c.A = c.S
+	c.testZero(c.A)
+	c.testNegative(c.A)
 }
 
 func txs(c *CPU, m byte) {
-
+	c.S = c.X
 }
 
 func tya(c *CPU, m byte) {
-
+	c.A = c.Y
+	c.testZero(c.A)
+	c.testNegative(c.A)
 }
