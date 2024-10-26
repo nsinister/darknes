@@ -13,8 +13,8 @@ const (
 	FlagInterruptDisable byte = 0x04
 	FlagDecimalMode      byte = 0x08
 	FlagBreakCommand     byte = 0x10
-	FlagOverflow         byte = 0x20
-	FlagNegative         byte = 0x40
+	FlagOverflow         byte = 0x40
+	FlagNegative         byte = 0x80
 
 	prgStartAddr = 0x8000
 
@@ -60,12 +60,7 @@ func (cpu *CPU) Reset() {
 
 	// JMP (FFFC) - reset vector
 	a := (uint16(cpu.mem.Read(0xFFFD)) << 8) | uint16(cpu.mem.Read(0xFFFC))
-	cpu.PC = (uint16(cpu.mem.Read(a+1)) << 8) | uint16(cpu.mem.Read(a))
-	/*
-		cpu.S -= 3
-		cpu.mem.Write(0x4015, 0x00)
-		cpu.P |= 0x04
-		cpu.PC = prgStartAddr */
+	cpu.PC = a
 }
 
 // Step executes a single instruction

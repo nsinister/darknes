@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"darknes/nes"
@@ -14,7 +13,7 @@ func main() {
 		return
 	}
 	path := os.Args[1]
-	romData, err := ioutil.ReadFile(path)
+	romData, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
