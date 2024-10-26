@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"darknes/nes"
+	"darknes/ui"
 )
 
 func main() {
@@ -22,11 +23,20 @@ func main() {
 	mem := r.Load()
 	cpu := nes.InitCPU(mem)
 	cpu.Reset()
+
 	fmt.Printf("Init state: A=%x, X=%x, Y=%x, S=%x, P=%b, PC=%x\n",
 		cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC)
-	for i := 0; i < 10; i++ {
-		cpu.Step()
-		fmt.Printf("A=%x, X=%x, Y=%x, S=%x, P=%b, PC=%x\n",
-			cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC)
+
+	screen := ui.CreateScreen(cpu)
+	if err := screen.RunSdlLoop(); err != nil {
+		os.Exit(1)
 	}
+
+	/*
+		for i := 0; i < 10; i++ {
+			cpu.Step()
+			fmt.Printf("A=%x, X=%x, Y=%x, S=%x, P=%b, PC=%x\n",
+				cpu.A, cpu.X, cpu.Y, cpu.S, cpu.P, cpu.PC)
+		}
+	*/
 }

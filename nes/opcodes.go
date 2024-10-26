@@ -1,5 +1,10 @@
 package nes
 
+import (
+	"reflect"
+	"runtime"
+)
+
 // PC is not incremented in the opcode handler functions,
 // to address the operand it must do the addition - cpu.rom[cpu.PC+1]
 // For overflow protection integer type casts are used
@@ -7,13 +12,17 @@ package nes
 // Opcode represents a single opcode
 type Opcode struct {
 	// Function that handles the instruction
-	handler func(*CPU, byte)
+	Handler func(*CPU, byte)
 	// Addressing mode
 	mode byte
 	// Instruction length
 	len uint16
 	// Number of cycles
 	cycles uint16
+}
+
+func (*Opcode) GetOpHandlerName(i interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
 
 const (
@@ -35,7 +44,6 @@ const (
 
 // Opcode map contains bindings between opcode functions and their
 // hexdecimal representation
-
 var opcodeMap = map[byte]*Opcode{
 	0xA9: &Opcode{lda, Imm, 2, 2},
 	0xA5: &Opcode{lda, Zp, 2, 3},

@@ -37,6 +37,7 @@ func (rom *Rom) Load() *Memory {
 		p++
 	}
 
+	// Write reset vector into 0xFFFC
 	m.Write(0xFFFD, byte(0x8000>>8))
 	m.Write(0xFFFC, byte(0x8000&0xFF))
 

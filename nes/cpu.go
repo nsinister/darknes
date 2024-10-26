@@ -39,6 +39,9 @@ type CPU struct {
 
 	// RAM
 	mem *Memory
+
+	// Last instruction
+	LastOp *Opcode
 }
 
 // InitCPU mehtod initializes 2A03 CPU.
@@ -63,14 +66,19 @@ func (cpu *CPU) Reset() {
 	cpu.PC = a
 }
 
+func (cpu *CPU) GetCpu() *CPU {
+	return cpu
+}
+
 // Step executes a single instruction
 func (cpu *CPU) Step() {
 	// Read next instruction
 	op := cpu.mem.Read(cpu.PC)
 	// Identify and process the instruction
 	if opcode, ok := opcodeMap[op]; ok {
-		fmt.Printf("OP=%x Handler: %s\n", op, getFunctionName(opcode.handler))
-		opcode.handler(cpu, opcode.mode)
+		fmt.Printf("OP=%x Handler: %s\n", op, getFunctionName(opcode.Handler))
+		opcode.Handler(cpu, opcode.mode)
+		cpu.LastOp = opcode
 	} else {
 		panic(fmt.Sprintf("Opcode %x not recognized\n", op))
 	}
