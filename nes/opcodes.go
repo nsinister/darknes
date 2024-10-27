@@ -567,9 +567,67 @@ func lsr(c *CPU, m byte) {
 }
 
 func rol(c *CPU, m byte) {
+	var v byte
+	var addr uint16
+
+	hasCarry := c.P&FlagCarry == FlagCarry
+
+	if m == Acc {
+		v = c.A
+	} else {
+		addr = peek(c, m)
+		v = c.mem.Read(addr)
+	}
+
+	if (v >> 7) == 1 {
+		c.setFlag(FlagCarry)
+	} else {
+		c.clearFlag(FlagCarry)
+	}
+
+	v = v << 1
+
+	if hasCarry {
+		v = v | 1
+	}
+
+	if m == Acc {
+		c.A = v
+	} else {
+		c.mem.Write(addr, v)
+	}
 }
 
 func ror(c *CPU, m byte) {
+	var v byte
+	var addr uint16
+
+	hasCarry := c.P&FlagCarry == FlagCarry
+
+	if m == Acc {
+		v = c.A
+	} else {
+		addr = peek(c, m)
+		v = c.mem.Read(addr)
+	}
+
+	if (v & 1) == 1 {
+		c.setFlag(FlagCarry)
+	} else {
+		c.clearFlag(FlagCarry)
+	}
+
+	v = v >> 1
+
+	if hasCarry {
+		v = v | FlagNegative
+	}
+
+	if m == Acc {
+		c.A = v
+	} else {
+		c.mem.Write(addr, v)
+	}
 }
 
 func nop(c *CPU, m byte) {
@@ -577,35 +635,55 @@ func nop(c *CPU, m byte) {
 }
 
 func ora(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	c.A |= v
+	c.testZero(c.A)
+	c.testNegative(c.A)
 }
 
 func pha(c *CPU, m byte) {
-
+	c.push(c.A)
 }
 
 func php(c *CPU, m byte) {
-
+	c.push(c.P)
 }
 
 func pla(c *CPU, m byte) {
-
+	c.A = c.pop()
+	c.testZero(c.A)
+	c.testNegative(c.A)
 }
 
 func plp(c *CPU, m byte) {
-
+	c.P = c.pop()
 }
 
 func rti(c *CPU, m byte) {
+	c.P = c.pop()
 
+	// Pull Program Counter from stack
+	pcl := c.pop()
+	pch := c.pop()
+	c.PC = uint16(pch<<8 | pcl)
 }
 
 func rts(c *CPU, m byte) {
-
+	// Pull Program Counter from stack
+	pcl := c.pop()
+	pch := c.pop()
+	c.PC = uint16((pch<<8)|pcl) + 1
 }
 
 func sbc(c *CPU, m byte) {
-
+	v := c.mem.Read(peek(c, m))
+	v = ^v
+	a := c.A
+	c.A = a + v + (c.P & 0x01)
+	c.testOverflowOnAdd(a, v, c.A)
+	c.testNegative(c.A)
+	c.testZero(c.A)
+	c.testCarryOnAdd(c.A)
 }
 
 func sec(c *CPU, m byte) {

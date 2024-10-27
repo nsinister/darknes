@@ -29,10 +29,8 @@ type SdlFrontend struct {
 	font *ttf.Font
 }
 
-func CreateScreen(cpuEmu common.CpuEmulator) *SdlFrontend {
-	var frontend SdlFrontend
-	frontend.cpuEmu = cpuEmu
-	return &frontend
+func CreateFrontend(cpuEmu common.CpuEmulator) *SdlFrontend {
+	return &SdlFrontend{cpuEmu: cpuEmu}
 }
 
 func (frontend *SdlFrontend) renderText(textstr string, x int32, y int32) (err error) {
