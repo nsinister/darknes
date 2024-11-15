@@ -21,6 +21,7 @@ type SdlFrontend struct {
 	surface *sdl.Surface
 
 	cpuEmu common.CpuEmulator
+	ppuEmu common.PpuEmulator
 
 	running bool
 
@@ -29,8 +30,8 @@ type SdlFrontend struct {
 	font *ttf.Font
 }
 
-func CreateFrontend(cpuEmu common.CpuEmulator) *SdlFrontend {
-	return &SdlFrontend{cpuEmu: cpuEmu}
+func CreateFrontend(cpuEmu common.CpuEmulator, ppuEmu common.PpuEmulator) *SdlFrontend {
+	return &SdlFrontend{cpuEmu: cpuEmu, ppuEmu: ppuEmu}
 }
 
 func (frontend *SdlFrontend) renderText(textstr string, x int32, y int32) (err error) {
@@ -66,19 +67,9 @@ func (frontend *SdlFrontend) handleEvent(event sdl.Event) {
 			} else if t.Keysym.Sym == sdl.K_DOWN {
 				// TODO:
 			} else if t.Keysym.Sym == sdl.K_SPACE {
-				// Perform one step in the CPU
-				frontend.cpuEmu.Step()
 
-				// Extract debug info
-				cpu := frontend.cpuEmu.GetCpu()
-				opName := strings.Split(cpu.LastOp.GetOpHandlerName(cpu.LastOp.Handler), ".")[1]
-
-				cpuDebugText := fmt.Sprintf("OP: %s PC: [%04x] Status: [%08b] S: [(%x)] A: [%d (%x)] X: [%d (%x)] Y: [%d (%x)]",
-					opName, cpu.PC, cpu.P, cpu.S, cpu.A, cpu.A, cpu.X, cpu.X, cpu.Y, cpu.Y)
-
-				// Show some debug text
-				frontend.surface.FillRect(nil, 0)
-				frontend.renderText(cpuDebugText, 10, 10)
+				// TODO
+				frontend.step()
 			}
 		}
 		break
@@ -121,8 +112,31 @@ func (frontend *SdlFrontend) RunSdlLoop() (err error) {
 			frontend.handleEvent(event)
 		}
 
+		// TODO
+		frontend.step()
+
 		sdl.Delay(16)
 	}
 
 	return
+}
+
+func (frontend *SdlFrontend) step() {
+	// Perform CPU step
+	cpuState := frontend.cpuEmu.Step()
+
+	// Perform PPU step
+	ppuCycles := cpuState.Cycles * 3
+	frontend.ppuEmu.Step(ppuCycles)
+
+	// Extract debug info
+	opName := strings.Split(cpuState.LastOp.GetOpHandlerName(cpuState.LastOp.Handler), ".")[1]
+
+	// Show some debug text
+	cpuDebugText := fmt.Sprintf("Cycles: %d OP: %s PC: [%04x] Status: [%08b] S: [(%x)] A: [%d (%x)] X: [%d (%x)] Y: [%d (%x)]",
+		cpuState.CyclesPassed,
+		opName, cpuState.PC, cpuState.P, cpuState.S, cpuState.A, cpuState.A, cpuState.X, cpuState.X, cpuState.Y, cpuState.Y)
+
+	frontend.surface.FillRect(nil, 0)
+	frontend.renderText(cpuDebugText, 10, 10)
 }

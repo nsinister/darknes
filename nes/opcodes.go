@@ -16,7 +16,7 @@ type Opcode struct {
 	// Addressing mode
 	mode byte
 	// Instruction length
-	len uint16
+	length uint16
 	// Number of cycles
 	cycles uint16
 }

@@ -37,9 +37,20 @@ type CPU struct {
 	// Cycles to wait
 	cycles uint16
 
+	cyclesPassed uint64
+
 	// RAM
 	mem *Memory
+}
 
+type CpuState struct {
+	A            byte
+	X, Y         byte
+	S            byte
+	PC           uint16
+	P            byte
+	Cycles       uint16
+	CyclesPassed uint64
 	// Last instruction
 	LastOp *Opcode
 }
@@ -52,6 +63,9 @@ func InitCPU(m *Memory) *CPU {
 
 // Reset method resets the CPU to match its power up state.
 func (cpu *CPU) Reset() {
+	//cpu.cyclesPassed = 0
+	//cpu.cycles = 0
+
 	cpu.X, cpu.Y = 0, 0
 	cpu.P = 0x34
 	cpu.S = 0xFD
@@ -66,24 +80,53 @@ func (cpu *CPU) Reset() {
 	cpu.PC = a
 }
 
-func (cpu *CPU) GetCpu() *CPU {
-	return cpu
-}
-
 // Step executes a single instruction
-func (cpu *CPU) Step() {
+func (cpu *CPU) Step() CpuState {
 	// Read next instruction
 	op := cpu.mem.Read(cpu.PC)
+
 	// Identify and process the instruction
-	if opcode, ok := opcodeMap[op]; ok {
+	opcode, ok := opcodeMap[op]
+	if ok {
 		fmt.Printf("OP=%x Handler: %s\n", op, getFunctionName(opcode.Handler))
+
+		// Execute instruction
 		opcode.Handler(cpu, opcode.mode)
-		cpu.LastOp = opcode
 	} else {
 		panic(fmt.Sprintf("Opcode %x not recognized\n", op))
 	}
+
+	cpu.cycles += opcode.cycles
+	cpu.cyclesPassed += uint64(cpu.cycles)
+
+	// Return current copy of CPU state for debugging
+	state := CpuState{A: cpu.A,
+		X:            cpu.X,
+		Y:            cpu.Y,
+		PC:           cpu.PC,
+		P:            cpu.P,
+		S:            cpu.S,
+		Cycles:       cpu.cycles,
+		CyclesPassed: cpu.cyclesPassed,
+		LastOp:       opcode}
+
 	// Go to the next instruction (if prev opcode was jmp, it doesn't do anything)
 	nextOp(cpu, op)
+
+	return state
+}
+
+func (cpu *CPU) nmiInterrupt() {
+	cpu.pushWord(cpu.PC)
+	cpu.push(cpu.P)
+	// TODO unfinished
+	cpu.setFlag(FlagInterruptDisable)
+
+	// fetch address vector
+	pcLow := cpu.mem.Read(0xFFFA)
+	pcHigh := cpu.mem.Read(0xFFFB)
+	// jump to the address
+	cpu.PC = uint16((pcHigh << 8) | pcLow)
 }
 
 // Push value to stack
@@ -98,6 +141,17 @@ func (cpu *CPU) pop() byte {
 	addr := stackAddr + uint16(cpu.S)
 	cpu.S++
 	return cpu.mem.Read(addr)
+}
+
+func (cpu *CPU) pushWord(val uint16) {
+	cpu.push(byte(val >> 8))
+	cpu.push(byte(val & 0xFF))
+}
+
+func (cpu *CPU) popWord() uint16 {
+	lowByte := cpu.pop()
+	highByte := cpu.pop()
+	return uint16(highByte<<8 | lowByte)
 }
 
 // Sets flag in register P
@@ -191,7 +245,7 @@ func nextOp(cpu *CPU, opcode byte) {
 	case 0x70:
 		return
 	}
-	cpu.PC += opcodeMap[opcode].len
+	cpu.PC += opcodeMap[opcode].length
 }
 
 // Takes address value by specified addressing mode using instruction operand
